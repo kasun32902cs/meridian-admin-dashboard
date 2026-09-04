@@ -1,0 +1,17 @@
+# Optional: spins up a local SQL Server instance for development.
+# Run: docker compose up -d
+# Then update backend/AdminDashboard.Api/appsettings.json if you change the password.
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: admin-dashboard-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "sa"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+volumes:
+  sqlserver-data:
