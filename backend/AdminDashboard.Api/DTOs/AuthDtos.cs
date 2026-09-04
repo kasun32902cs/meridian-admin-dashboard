@@ -1,20 +1,37 @@
+// backend/AdminDashboard.Api/DTOs/AuthDtos.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace AdminDashboard.Api.DTOs;
 
-public record LoginRequest(
-    [property: Required, EmailAddress] string Email,
-    [property: Required] string Password
-);
+public class LoginRequest
+{
+    [Required(ErrorMessage = "Username is required")]
+    public string Username { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "Password is required")]
+    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+    public string Password { get; set; } = string.Empty;
+}
 
-public record RegisterRequest(
-    [property: Required] string FullName,
-    [property: Required, EmailAddress] string Email,
-    [property: Required, MinLength(8)] string Password
-);
+public class RegisterRequest
+{
+    [Required(ErrorMessage = "Full name is required")]
+    public string FullName { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "Email is required")]
+    [EmailAddress(ErrorMessage = "Invalid email address")]
+    public string Email { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "Password is required")]
+    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+    public string Password { get; set; } = string.Empty;
+}
 
-public record AuthResponse(
-    string Token,
-    DateTime ExpiresAt,
-    UserDto User
-);
+public class AuthResponse
+{
+    public string Token { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+}

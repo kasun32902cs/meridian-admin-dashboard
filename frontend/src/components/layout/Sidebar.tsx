@@ -1,76 +1,109 @@
-import { NavLink } from 'react-router-dom'
+// frontend/src/components/layout/Sidebar.tsx
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import {
+  LayoutDashboard,
+  Users,
+  FolderKanban,
+  CheckSquare,
+  Settings,
+  LogOut,
+  X,
+  Home,
+  BarChart3,
+  Calendar,
+  Bell,
+} from 'lucide-react';
 
-const navItems = [
-  { to: '/', label: 'Overview', icon: OverviewIcon, end: true },
-  { to: '/projects', label: 'Projects', icon: ProjectsIcon },
-  { to: '/users', label: 'Team', icon: TeamIcon },
-]
+interface SidebarProps {
+  onClose?: () => void;
+}
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: SidebarProps) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+    if (onClose) onClose();
+  };
+
+  const navItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/users', label: 'Users', icon: Users },
+    { path: '/projects', label: 'Projects', icon: FolderKanban },
+    { path: '/tasks', label: 'Tasks', icon: CheckSquare },
+    { path: '/analytics', label: 'Analytics', icon: BarChart3 },
+    { path: '/calendar', label: 'Calendar', icon: Calendar },
+    { path: '/settings', label: 'Settings', icon: Settings },
+  ];
+
   return (
-    <aside className="flex h-screen w-60 flex-shrink-0 flex-col bg-ink-900 text-ink-50">
-      <div className="flex items-center gap-2 px-6 py-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-teal-500">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M2 12L6 4L9 10L11 6L14 12" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+    <div className="flex h-full w-64 flex-col bg-gray-900 text-white">
+      {/* Logo */}
+      <div className="flex h-16 items-center justify-between px-4 border-b border-gray-800">
+        <div className="flex items-center gap-2">
+          <Home className="h-8 w-8 text-blue-500" />
+          <span className="text-xl font-bold">AdminHub</span>
         </div>
-        <span className="font-display text-lg font-semibold tracking-tight text-white">Meridian</span>
+        <button
+          onClick={onClose}
+          className="rounded-lg p-1 hover:bg-gray-800 lg:hidden"
+        >
+          <X className="h-6 w-6" />
+        </button>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm transition-colors ${
-                isActive
-                  ? 'border-teal-400 bg-white/5 text-white font-medium'
-                  : 'border-transparent text-ink-100/70 hover:bg-white/5 hover:text-white'
-              }`
-            }
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-2 py-4">
+        <div className="space-y-1">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={onClose}
+              className={({ isActive }) => `
+                flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors
+                ${isActive
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                }
+              `}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+
+        {/* Bottom section */}
+        <div className="mt-8 border-t border-gray-800 pt-4">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
           >
-            <item.icon />
-            {item.label}
-          </NavLink>
-        ))}
+            <LogOut className="h-5 w-5" />
+            Logout
+          </button>
+        </div>
       </nav>
 
-      <div className="border-t border-white/10 px-6 py-4 text-xs text-ink-100/50">
-        Meridian Admin · v0.1
+      {/* User info */}
+      <div className="border-t border-gray-800 p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold">
+            A
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium">Admin User</p>
+            <p className="text-xs text-gray-400">Administrator</p>
+          </div>
+          <button className="rounded-full p-1 hover:bg-gray-800">
+            <Bell className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-    </aside>
-  )
-}
-
-function OverviewIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="1.5" y="1.5" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="8.5" y="1.5" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="8.5" y="7.5" width="6" height="7" rx="1" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="1.5" y="9.5" width="6" height="5" rx="1" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  )
-}
-
-function ProjectsIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M1.5 4.5C1.5 3.67 2.17 3 3 3H6L7.5 4.5H13C13.83 4.5 14.5 5.17 14.5 6V11.5C14.5 12.33 13.83 13 13 13H3C2.17 13 1.5 12.33 1.5 11.5V4.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function TeamIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="5.5" cy="5" r="2" stroke="currentColor" strokeWidth="1.4" />
-      <circle cx="11" cy="6" r="1.6" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M1.5 14C1.5 11.24 3.24 9.5 5.5 9.5C7.76 9.5 9.5 11.24 9.5 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M10 9.7C12 9.9 13.5 11.4 13.5 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  )
+    </div>
+  );
 }

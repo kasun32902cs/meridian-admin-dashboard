@@ -1,3 +1,4 @@
+// backend/AdminDashboard.Api/Services/AuthService.cs
 using AdminDashboard.Api.Data;
 using AdminDashboard.Api.DTOs;
 using AdminDashboard.Api.Models;
@@ -7,32 +8,50 @@ namespace AdminDashboard.Api.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly AppDbContext _db;
+    private readonly AppDbContext _context;
     private readonly ITokenService _tokenService;
 
-    public AuthService(AppDbContext db, ITokenService tokenService)
+    public AuthService(AppDbContext context, ITokenService tokenService)
     {
-        _db = db;
+        _context = context;
         _tokenService = tokenService;
     }
 
-    public async Task<AuthResponse?> LoginAsync(LoginRequest request)
+    public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-        if (user is null || !user.IsActive) return null;
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash)) return null;
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == request.Username || u.FullName == request.Username);
+
+        // Use BCrypt.Net.BCrypt with fully qualified name
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            throw new UnauthorizedAccessException("Invalid credentials");
+        }
 
         user.LastLoginAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
+        await _context.SaveChangesAsync();
 
-        var (token, expiresAt) = _tokenService.GenerateToken(user);
-        return new AuthResponse(token, expiresAt, ToDto(user));
+        var token = _tokenService.GenerateToken(user);
+
+        return new AuthResponse
+        {
+            Token = token,
+            FullName = user.FullName,
+            Email = user.Email,
+            Role = user.Role.ToString(),
+            ExpiresAt = DateTime.UtcNow.AddHours(1)
+        };
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
-        if (await _db.Users.AnyAsync(u => u.Email == request.Email))
-            throw new InvalidOperationException("A user with this email already exists.");
+        var existingUser = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == request.Email);
+        
+        if (existingUser != null)
+        {
+            throw new InvalidOperationException("User with this email already exists");
+        }
 
         var user = new User
         {
@@ -40,16 +59,22 @@ public class AuthService : IAuthService
             Email = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = UserRole.Member,
-            IsActive = true
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
         };
 
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync();
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
 
-        var (token, expiresAt) = _tokenService.GenerateToken(user);
-        return new AuthResponse(token, expiresAt, ToDto(user));
+        var token = _tokenService.GenerateToken(user);
+
+        return new AuthResponse
+        {
+            Token = token,
+            FullName = user.FullName,
+            Email = user.Email,
+            Role = user.Role.ToString(),
+            ExpiresAt = DateTime.UtcNow.AddHours(1)
+        };
     }
-
-    private static UserDto ToDto(User u) =>
-        new(u.Id, u.FullName, u.Email, u.Role, u.IsActive, u.CreatedAt, u.LastLoginAt);
 }

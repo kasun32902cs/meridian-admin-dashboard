@@ -1,25 +1,38 @@
+/* frontend/src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  html {
-    @apply antialiased;
-  }
   body {
-    @apply bg-canvas text-ink-900 font-sans;
-  }
-  ::selection {
-    @apply bg-teal-100;
+    @apply bg-gray-100;
   }
 }
 
-@layer utilities {
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+@layer components {
+  .sidebar-transition {
+    transition: transform 0.3s ease-in-out;
   }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgba(22, 35, 43, 0.15);
-    border-radius: 999px;
+  
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
   }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
 }

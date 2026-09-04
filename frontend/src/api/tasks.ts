@@ -1,30 +1,39 @@
-import { apiClient } from './client'
-import type { TaskItem, TaskPriority, WorkItemStatus } from '@/types'
+// frontend/src/api/tasks.ts
+import { apiClient } from './client';
 
-export const getTasks = (projectId?: number) =>
-  apiClient
-    .get<TaskItem[]>('/tasks', { params: projectId ? { projectId } : {} })
-    .then((r) => r.data)
+export interface Task {
+  id: number;
+  title: string;
+  description: string;
+  projectId: number;
+  projectName?: string;
+  priority: 'High' | 'Medium' | 'Low';
+  status: 'Todo' | 'InProgress' | 'Done';
+  assignedTo: string;
+  dueDate: string;
+  createdAt: string;
+}
 
-export const createTask = (data: {
-  title: string
-  notes: string | null
-  priority: TaskPriority
-  projectId: number
-  assigneeId: number | null
-  dueDate: string | null
-}) => apiClient.post<TaskItem>('/tasks', data).then((r) => r.data)
+export const getTasks = async (): Promise<Task[]> => {
+  const response = await apiClient.get('/tasks');
+  return response.data;
+};
 
-export const updateTask = (
-  id: number,
-  data: {
-    title: string
-    notes: string | null
-    priority: TaskPriority
-    status: WorkItemStatus
-    assigneeId: number | null
-    dueDate: string | null
-  },
-) => apiClient.put<TaskItem>(`/tasks/${id}`, data).then((r) => r.data)
+export const getTask = async (id: number): Promise<Task> => {
+  const response = await apiClient.get(`/tasks/${id}`);
+  return response.data;
+};
 
-export const deleteTask = (id: number) => apiClient.delete(`/tasks/${id}`)
+export const createTask = async (task: Omit<Task, 'id' | 'createdAt'>): Promise<Task> => {
+  const response = await apiClient.post('/tasks', task);
+  return response.data;
+};
+
+export const updateTask = async (id: number, task: Partial<Task>): Promise<Task> => {
+  const response = await apiClient.put(`/tasks/${id}`, task);
+  return response.data;
+};
+
+export const deleteTask = async (id: number): Promise<void> => {
+  await apiClient.delete(`/tasks/${id}`);
+};

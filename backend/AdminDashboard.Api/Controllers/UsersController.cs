@@ -1,5 +1,5 @@
+// backend/AdminDashboard.Api/Controllers/UsersController.cs
 using AdminDashboard.Api.Data;
-using AdminDashboard.Api.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,55 +11,51 @@ namespace AdminDashboard.Api.Controllers;
 [Authorize]
 public class UsersController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly AppDbContext _context;
 
-    public UsersController(AppDbContext db)
+    public UsersController(AppDbContext context)
     {
-        _db = db;
+        _context = context;
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<UserDto>>> GetAll()
+    public async Task<IActionResult> GetUsers()
     {
-        var users = await _db.Users
-            .OrderBy(u => u.FullName)
-            .Select(u => new UserDto(u.Id, u.FullName, u.Email, u.Role, u.IsActive, u.CreatedAt, u.LastLoginAt))
+        var users = await _context.Users
+            .Select(u => new
+            {
+                u.Id,
+                u.FullName,
+                u.Email,
+                u.Role,
+                u.IsActive,
+                u.CreatedAt,
+                u.LastLoginAt
+            })
             .ToListAsync();
+
         return Ok(users);
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<ActionResult<UserDto>> GetById(int id)
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUser(int id)
     {
-        var u = await _db.Users.FindAsync(id);
-        if (u is null) return NotFound();
-        return Ok(new UserDto(u.Id, u.FullName, u.Email, u.Role, u.IsActive, u.CreatedAt, u.LastLoginAt));
-    }
+        var user = await _context.Users
+            .Select(u => new
+            {
+                u.Id,
+                u.FullName,
+                u.Email,
+                u.Role,
+                u.IsActive,
+                u.CreatedAt,
+                u.LastLoginAt
+            })
+            .FirstOrDefaultAsync(u => u.Id == id);
 
-    [HttpPut("{id:int}")]
-    [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<UserDto>> Update(int id, UpdateUserRequest request)
-    {
-        var u = await _db.Users.FindAsync(id);
-        if (u is null) return NotFound();
+        if (user == null)
+            return NotFound(new { message = "User not found" });
 
-        u.FullName = request.FullName;
-        u.Role = request.Role;
-        u.IsActive = request.IsActive;
-        await _db.SaveChangesAsync();
-
-        return Ok(new UserDto(u.Id, u.FullName, u.Email, u.Role, u.IsActive, u.CreatedAt, u.LastLoginAt));
-    }
-
-    [HttpDelete("{id:int}")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var u = await _db.Users.FindAsync(id);
-        if (u is null) return NotFound();
-
-        _db.Users.Remove(u);
-        await _db.SaveChangesAsync();
-        return NoContent();
+        return Ok(user);
     }
 }

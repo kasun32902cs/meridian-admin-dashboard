@@ -1,8 +1,31 @@
-import { apiClient } from './client'
-import type { AuthResponse } from '@/types'
+// frontend/src/api/auth.ts
+import { apiClient } from './client';
 
-export const login = (email: string, password: string) =>
-  apiClient.post<AuthResponse>('/auth/login', { email, password }).then((r) => r.data)
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
 
-export const register = (fullName: string, email: string, password: string) =>
-  apiClient.post<AuthResponse>('/auth/register', { fullName, email, password }).then((r) => r.data)
+export interface RegisterRequest {
+  fullName: string;
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  fullName: string;
+  email: string;
+  role: string;
+  expiresAt: string;
+}
+
+export const login = async (credentials: LoginRequest): Promise<AuthResponse> => {
+  const response = await apiClient.post('/auth/login', credentials);
+  return response.data;
+};
+
+export const register = async (userData: RegisterRequest): Promise<AuthResponse> => {
+  const response = await apiClient.post('/auth/register', userData);
+  return response.data;
+};

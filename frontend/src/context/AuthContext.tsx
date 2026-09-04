@@ -1,51 +1,67 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { User } from '@/types'
-import * as authApi from '@/api/auth'
+// frontend/src/context/AuthContext.tsx
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import api from '../api/client';
 
-interface AuthContextValue {
-  user: User | null
-  isLoading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signOut: () => void
+interface AuthContextType {
+  user: any;
+  token: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  isAuthenticated: boolean;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<any>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('auth_user')
-    const storedToken = localStorage.getItem('auth_token')
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser))
+    if (token) {
+      setIsAuthenticated(true);
+      // Optionally fetch user profile here
     }
-    setIsLoading(false)
-  }, [])
+  }, [token]);
 
-  const signIn = async (email: string, password: string) => {
-    const response = await authApi.login(email, password)
-    localStorage.setItem('auth_token', response.token)
-    localStorage.setItem('auth_user', JSON.stringify(response.user))
-    setUser(response.user)
-  }
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await api.post('/auth/login', {
+        username: email,
+        password: password
+      });
 
-  const signOut = () => {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('auth_user')
-    setUser(null)
-  }
+      const { token, fullName, email: userEmail, role } = response.data;
+      
+      localStorage.setItem('token', token);
+      setToken(token);
+      setUser({ fullName, email: userEmail, role });
+      setIsAuthenticated(true);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const message = error.response?.data?.message || 'Login failed';
+      throw new Error(message);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+    setIsAuthenticated(false);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within an AuthProvider')
-  return ctx
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

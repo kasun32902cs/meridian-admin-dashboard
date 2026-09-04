@@ -1,18 +1,14 @@
-import { Navigate, Outlet } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
+// frontend/src/components/ProtectedRoute.tsx
+import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-export default function ProtectedRoute() {
-  const { user, isLoading } = useAuth()
+export default function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-canvas">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
-      </div>
-    )
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  if (!user) return <Navigate to="/login" replace />
-
-  return <Outlet />
+  return <>{children}</>;
 }

@@ -1,110 +1,105 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import Topbar from '@/components/layout/Topbar'
-import Table from '@/components/ui/Table'
-import Badge from '@/components/ui/Badge'
-import Button from '@/components/ui/Button'
-import { getProjects, createProject, deleteProject } from '@/api/projects'
-import { getUsers } from '@/api/users'
-import type { ProjectItem, User } from '@/types'
+// frontend/src/pages/ProjectsPage.tsx
+import { useEffect, useState } from 'react';
+import { getProjects, createProject, deleteProject, Project } from '../api/projects';
+import Topbar from '../components/layout/Topbar';
+import Button from '../components/ui/Button';
+import Table from '../components/ui/Table';
+import Badge from '../components/ui/Badge';
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<ProjectItem[]>([])
-  const [users, setUsers] = useState<User[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [ownerId, setOwnerId] = useState<number | ''>('')
-  const [error, setError] = useState<string | null>(null)
-
-  const load = () => {
-    getProjects().then(setProjects).catch(() => setError('Could not load projects.'))
-  }
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    load()
-    getUsers().then(setUsers).catch(() => {})
-  }, [])
+    fetchProjects();
+  }, []);
 
-  const handleCreate = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!ownerId) return
-    await createProject({ name, description, ownerId: Number(ownerId), dueDate: null })
-    setName('')
-    setDescription('')
-    setOwnerId('')
-    setShowForm(false)
-    load()
-  }
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const data = await getProjects();
+      setProjects(data);
+    } catch (err) {
+      setError('Failed to load projects');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this project? Its tasks will be removed too.')) return
-    await deleteProject(id)
-    load()
-  }
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      try {
+        await deleteProject(id);
+        await fetchProjects();
+      } catch (err) {
+        alert('Failed to delete project');
+        console.error(err);
+      }
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: { [key: string]: 'green' | 'red' | 'yellow' | 'blue' | 'gray' } = {
+      'Completed': 'green',
+      'InProgress': 'blue',
+      'Planning': 'yellow',
+      'OnHold': 'red',
+      'Cancelled': 'gray'
+    };
+    return colors[status] || 'gray';
+  };
 
   return (
-    <>
-      <Topbar title="Projects" />
-      <main className="flex-1 overflow-y-auto scrollbar-thin px-8 py-6">
-        {error && <p className="mb-4 text-sm text-rose-500">{error}</p>}
-
-        <div className="mb-5 flex items-center justify-between">
-          <p className="text-sm text-ink-400">{projects.length} projects</p>
-          <Button onClick={() => setShowForm((v) => !v)}>{showForm ? 'Cancel' : 'New project'}</Button>
+    <div className="min-h-screen bg-gray-100">
+      
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800">Projects</h2>
+            <Button onClick={() => alert('Add project functionality coming soon!')}>
+              Add Project
+            </Button>
+          </div>
+          {loading ? (
+            <div className="p-6 text-center text-gray-500">Loading...</div>
+          ) : error ? (
+            <div className="p-6 text-center text-red-500">{error}</div>
+          ) : (
+            <Table
+              headers={['Name', 'Description', 'Status', 'Priority', 'Actions']}
+              data={projects}
+              renderRow={(project, index) => (
+                <tr key={project.id || index}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {project.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {project.description}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Badge color={getStatusColor(project.status)}>
+                      {project.status}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {project.priority}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              )}
+            />
+          )}
         </div>
-
-        {showForm && (
-          <form onSubmit={handleCreate} className="mb-6 grid grid-cols-1 gap-4 rounded-md border border-ink-50 bg-white p-5 shadow-panel sm:grid-cols-4">
-            <input
-              required
-              placeholder="Project name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="rounded-md border border-ink-100 px-3 py-2 text-sm outline-none focus:border-teal-500 sm:col-span-2"
-            />
-            <input
-              placeholder="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="rounded-md border border-ink-100 px-3 py-2 text-sm outline-none focus:border-teal-500"
-            />
-            <select
-              required
-              value={ownerId}
-              onChange={(e) => setOwnerId(Number(e.target.value))}
-              className="rounded-md border border-ink-100 px-3 py-2 text-sm outline-none focus:border-teal-500"
-            >
-              <option value="">Owner…</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>{u.fullName}</option>
-              ))}
-            </select>
-            <div className="sm:col-span-4">
-              <Button type="submit">Create project</Button>
-            </div>
-          </form>
-        )}
-
-        <Table
-          columns={[
-            { header: 'Name', render: (p) => <span className="font-medium">{p.name}</span> },
-            { header: 'Owner', render: (p) => p.ownerName },
-            { header: 'Status', render: (p) => <Badge label={p.status} /> },
-            { header: 'Tasks', render: (p) => p.taskCount },
-            {
-              header: '',
-              render: (p) => (
-                <button onClick={() => handleDelete(p.id)} className="text-xs text-ink-400 hover:text-rose-500">
-                  Delete
-                </button>
-              ),
-            },
-          ]}
-          rows={projects}
-          keyFn={(p) => p.id}
-          emptyMessage="No projects yet. Create your first one above."
-        />
-      </main>
-    </>
-  )
+      </div>
+    </div>
+  );
 }

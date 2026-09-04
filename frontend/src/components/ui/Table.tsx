@@ -1,51 +1,30 @@
-import type { ReactNode } from 'react'
-
-interface Column<T> {
-  header: string
-  render: (row: T) => ReactNode
-  className?: string
+// frontend/src/components/ui/Table.tsx
+interface TableProps {
+  headers: string[];
+  data: any[];
+  renderRow: (item: any, index: number) => React.ReactNode;
 }
 
-interface TableProps<T> {
-  columns: Column<T>[]
-  rows: T[]
-  keyFn: (row: T) => string | number
-  emptyMessage?: string
-}
-
-export default function Table<T>({ columns, rows, keyFn, emptyMessage = 'Nothing here yet.' }: TableProps<T>) {
-  if (rows.length === 0) {
-    return (
-      <div className="rounded-md border border-dashed border-ink-100 bg-white py-12 text-center text-sm text-ink-400">
-        {emptyMessage}
-      </div>
-    )
-  }
-
+export default function Table({ headers, data, renderRow }: TableProps) {
   return (
-    <div className="overflow-hidden rounded-md border border-ink-50 bg-white shadow-panel">
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-ink-50 bg-ink-50/40">
-            {columns.map((col) => (
-              <th key={col.header} className="px-5 py-3 font-medium text-ink-400">
-                {col.header}
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            {headers.map((header, index) => (
+              <th
+                key={index}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={keyFn(row)} className="border-b border-ink-50 last:border-0 hover:bg-ink-50/30">
-              {columns.map((col) => (
-                <td key={col.header} className={`px-5 py-3.5 text-ink-900 ${col.className ?? ''}`}>
-                  {col.render(row)}
-                </td>
-              ))}
-            </tr>
-          ))}
+        <tbody className="bg-white divide-y divide-gray-200">
+          {data.map((item, index) => renderRow(item, index))}
         </tbody>
       </table>
     </div>
-  )
+  );
 }

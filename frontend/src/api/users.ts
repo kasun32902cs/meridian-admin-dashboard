@@ -1,9 +1,36 @@
-import { apiClient } from './client'
-import type { User, UserRole } from '@/types'
+// frontend/src/api/users.ts
+import { apiClient } from './client';
 
-export const getUsers = () => apiClient.get<User[]>('/users').then((r) => r.data)
+export interface User {
+  id: number;
+  fullName: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
 
-export const updateUser = (id: number, data: { fullName: string; role: UserRole; isActive: boolean }) =>
-  apiClient.put<User>(`/users/${id}`, data).then((r) => r.data)
+export const getUsers = async (): Promise<User[]> => {
+  const response = await apiClient.get('/users');
+  return response.data;
+};
 
-export const deleteUser = (id: number) => apiClient.delete(`/users/${id}`)
+export const getUser = async (id: number): Promise<User> => {
+  const response = await apiClient.get(`/users/${id}`);
+  return response.data;
+};
+
+export const createUser = async (user: Omit<User, 'id' | 'createdAt' | 'lastLoginAt'>): Promise<User> => {
+  const response = await apiClient.post('/users', user);
+  return response.data;
+};
+
+export const updateUser = async (id: number, user: Partial<User>): Promise<User> => {
+  const response = await apiClient.put(`/users/${id}`, user);
+  return response.data;
+};
+
+export const deleteUser = async (id: number): Promise<void> => {
+  await apiClient.delete(`/users/${id}`);
+};
